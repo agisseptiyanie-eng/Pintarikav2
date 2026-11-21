@@ -1,0 +1,118 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pintarika Perkalian</title>
+<link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@600;700&family=Instrument+Sans:wght@400;600&family=Spline+Sans+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--p:#515D8C;--pc:#BBC7FD;--sc:#FFDCC3;--t:#006B63;--tc:#A7FEF3;--e:#A8364B;--bg:#F8F9FF;--cl:#EFF4FF;--tx:#05345C;--tv:#3D618C;--ol:#91B4E4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/24px 'Instrument Sans',sans-serif}
+h1,h2,h3{font-family:'Afacad Flux',sans-serif;margin:0 0 12px}h1{font-size:32px}h2{font-size:24px}h3{font-size:20px}
+.mono{font-family:'Spline Sans Mono',monospace;font-variant-numeric:tabular-nums}
+.app{display:flex;min-height:100vh}.side{width:230px;background:var(--cl);padding:20px;border-right:1px solid var(--ol)}
+.side a{display:block;padding:10px 14px;border-radius:12px;color:var(--tv);cursor:pointer;font-weight:600;margin-bottom:4px}.side a.on{background:var(--pc);color:#343F6D}
+.main{flex:1;padding:28px;max-width:1040px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.card{background:#fff;border:1px solid var(--ol);border-radius:16px;padding:20px;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+button{background:var(--p);color:#FAF8FF;border:0;border-radius:12px;padding:10px 18px;font:600 14px 'Instrument Sans';cursor:pointer}button:hover{filter:brightness(1.1)}
+button.alt{background:var(--sc);color:#7E4200}button.opt{background:#fff;color:var(--tx);border:2px solid var(--ol);font-size:22px;padding:14px;font-family:'Spline Sans Mono'}
+button.lite{background:var(--cl);color:var(--p)}button.del{background:#fff;color:var(--e);border:1px solid var(--e)}
+input,select{padding:10px 12px;border:1px solid var(--ol);border-radius:10px;font:inherit;background:#fff;color:var(--tx);margin:0 6px 8px 0}
+.bar{height:10px;background:var(--cl);border-radius:9999px;overflow:hidden}.bar i{display:block;height:100%;background:var(--t)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--cl)}
+.ok{color:var(--t);font-weight:600}.no{color:var(--e);font-weight:600}.big{font:700 44px 'Spline Sans Mono';text-align:center;margin:20px 0}
+.badge{background:var(--tc);color:#00645D;border-radius:9999px;padding:2px 10px;font-size:12px;font-weight:600}.badge.w{background:var(--sc);color:#7E4200}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}.center{max-width:420px;margin:8vh auto}
+@media(max-width:700px){.app{flex-direction:column}.side{position:fixed;bottom:0;left:0;right:0;width:100%;display:flex;overflow-x:auto;gap:2px;padding:8px;border:0;border-top:1px solid var(--ol);z-index:5}.side h2{display:none}.side a{white-space:nowrap;padding:8px 10px;font-size:13px;margin:0}.main{padding:14px 14px 84px}h1{font-size:26px}}
+</style></head><body><div id="root"></div><script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let U,tab,Q,timer,gameRaf;
+const api=async(p,b)=>{const r=await fetch('/api/'+p,{method:b?'POST':'GET',headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});const j=await r.json();if(!r.ok){if(r.status===401&&U){U=null;login()}throw new Error(j.error)}return j};
+const bar=(a,b)=>`<div class="bar"><i style="width:${b?Math.round(a/b*100):0}%"></i></div>`;
+const tgl=s=>new Date(s).toLocaleDateString('id-ID');
+const MENU={siswa:[['beranda','Beranda'],['capaian','Capaian'],['tujuan','Tujuan'],['kuis','Kuis'],['game','Games'],['nilai','Nilai'],['akun','Akun']],guru:[['rekap','Beranda Guru'],['materi','Kelola Materi'],['soal','Kelola Soal'],['rekapn','Data Siswa'],['akun','Akun']]};
+async function boot(){try{U=await api('me');tab=MENU[U.role][0][0];shell()}catch{login()}}
+function login(){let role='siswa';
+  $('#root').innerHTML=`<div class="center card"><h1>Masuk Pintarika</h1><p>Portal perkalian 1–100 • SD Nusantara 01</p>
+  <p><button id="r1">Siswa</button> <button id="r2" class="lite">Guru</button></p>
+  <input id="n" placeholder="NISN" style="width:100%"><input id="w" type="password" placeholder="Kata sandi" style="width:100%">
+  <p><button id="go">Masuk</button> <span id="e" class="no"></span></p></div>`;
+  const set=r=>{role=r;$('#r1').className=r==='siswa'?'':'lite';$('#r2').className=r==='guru'?'':'lite';$('#n').placeholder=r==='guru'?'Nama pengguna':'NISN'};
+  $('#r1').onclick=()=>set('siswa');$('#r2').onclick=()=>set('guru');
+  const go=async()=>{try{await api('login',{nisn:$('#n').value,pw:$('#w').value,role});boot()}catch(e){$('#e').textContent=e.message}};
+  $('#go').onclick=go;$('#w').onkeydown=e=>e.key==='Enter'&&go();
+}
+function shell(){clearInterval(timer);cancelAnimationFrame(gameRaf);
+  $('#root').innerHTML=`<div class="app"><nav class="side"><h2>Pintarika</h2>${MENU[U.role].map(([k,t])=>`<a data-t="${k}" class="${k===tab?'on':''}">${t}</a>`).join('')}<a id="out">Keluar</a></nav><main class="main"><div class="top"><span>${esc(U.nama)}${U.role==='siswa'?' • Kelas '+esc(U.kelas):''}</span>${U.role==='siswa'?`<span><button class="lite" id="bell">🔔</button> <span class="badge w">⭐ ${U.bintang} Bintang</span></span>`:''}</div><div id="v"></div></main></div>`;
+  document.querySelectorAll('[data-t]').forEach(a=>a.onclick=()=>{tab=a.dataset.t;shell()});
+  $('#out').onclick=async()=>{await api('logout',{});U=null;login()};
+  if($('#bell'))$('#bell').onclick=async()=>{const r=await api('ringkas');alert(r.notif.join('\n')||'Belum ada notifikasi')};V[tab]().catch(e=>$('#v').innerHTML=`<p class="no">${esc(e.message)}</p>`);
+}
+const refresh=async()=>{U=await api('me')};
+const V={
+async beranda(){const r=await api('ringkas'),pct=r.semua?Math.round(r.total/r.semua*100):0;
+  $('#v').innerHTML=`<h1>Halo, ${esc(U.nama.split(' ')[0])}!</h1><div class="card"><h3>Hebat! Kamu sudah menguasai ${pct}% perkalian 1–100.</h3>${bar(r.total,r.semua)}<p class="mono">${r.total}/${r.semua} fakta dikuasai</p><button id="g">Kerjakan Kuis</button></div>`;$('#g').onclick=()=>{tab='kuis';shell()}},
+async capaian(){const r=await api('ringkas');
+  $('#v').innerHTML=`<h1>Capaian pembelajaran</h1><div class="card"><h3>Progres total ${r.total}/${r.semua}</h3>${bar(r.total,r.semua)}</div><div class="grid">${r.materi.map((m,i)=>`<div class="card"><span class="badge ${m.ok>=m.semua?'':'w'}">${m.ok>=m.semua?'Tuntas':'Berjalan'}</span><h3>CP-0${i+1} ${esc(m.judul)}</h3>${bar(m.ok,m.semua)}<p class="mono">${m.ok}/${m.semua} fakta</p></div>`).join('')}</div>`},
+async tujuan(){const r=await api('ringkas'),n=r.tujuan.filter(t=>t.done).length;
+  $('#v').innerHTML=`<h1>Tujuan pembelajaran</h1><div class="card"><h3>${n} / ${r.tujuan.length} tujuan tercapai</h3></div>${r.tujuan.map((t,i)=>`<div class="card"><b class="mono">0${i+1}</b> ${esc(t.t)} <span class="badge ${t.done?'':'w'}">${t.done?'Tercapai':'Target'}</span></div>`).join('')}`},
+async kuis(){const ms=await api('materi');
+  $('#v').innerHTML=`<h1>Kuis perkalian</h1><p>Pilih mode: <select id="md"><option value="santai">Mode Santai (10 soal)</option><option value="tantangan">Tantangan 60 Detik</option></select></p><div class="grid">${ms.map(m=>`<div class="card"><h3>${esc(m.judul)}</h3><button data-m="${m.id}">Kerjakan Kuis</button></div>`).join('')}</div>`;
+  document.querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{const mode=$('#md').value;Q={m:+b.dataset.m,mode,items:await api(`kuis?materi=${b.dataset.m}&n=${mode==='santai'?10:30}`),i:0,ans:[],streak:0,t:60};
+    if(!Q.items.length)return alert('Belum ada soal aktif');if(mode==='tantangan')timer=setInterval(()=>{Q.t--;const e=$('#tm');if(e)e.textContent=Q.t+'d';if(Q.t<=0)fin()},1000);soal()})},
+async nilai(){const r=await api('nilai');
+  $('#v').innerHTML=`<h1>Nilai & rapor</h1><div class="grid"><div class="card">Rata-rata kuis<div class="big">${r.rataKuis}</div></div><div class="card">Rata-rata games<div class="big">${r.rataGame}</div></div><div class="card">Bab tuntas<div class="big">${r.materi.filter(m=>m.ok>=m.semua).length}/${r.materi.length}</div></div></div>
+  <div class="card"><h3>Riwayat kuis</h3><table><tr><th>Tanggal</th><th>Bab</th><th>Mode</th><th>Benar</th><th>Nilai</th></tr>${r.kuis.map(k=>`<tr><td>${tgl(k.tgl)}</td><td>${esc(k.judul)}</td><td>${k.mode}</td><td class="mono">${k.benar}/${k.total}</td><td class="mono">${k.skor}</td></tr>`).join('')||'<tr><td colspan=5>Belum ada nilai.</td></tr>'}</table></div>
+  <div class="card"><h3>Riwayat games</h3><table>${r.game.map(g=>`<tr><td>${tgl(g.tgl)}</td><td class="mono">${g.poin} poin</td></tr>`).join('')||'<tr><td>Belum main.</td></tr>'}</table></div>`},
+async game(){const ms=await api('materi'),soal=await api(`kuis?materi=${ms[0]?.id}&n=30`);
+  $('#v').innerHTML=`<h1>Petualangan perkalian</h1><p>Panah ◀ ▶ untuk bergerak, Spasi untuk melompat dan sundul blok jawaban yang benar.</p><div class="card"><div class="mono" id="hud"></div><canvas id="c" width="720" height="360" style="width:100%;background:var(--cl);border-radius:12px"></canvas><p><button id="st">Mulai</button></p></div>`;
+  $('#st').onclick=()=>runGame(soal)}
+};
+function soal(){const it=Q.items[Q.i];
+  $('#v').innerHTML=`<h1>Soal ${Q.i+1}/${Q.items.length} ${Q.mode==='tantangan'?`<span class="badge w mono" id="tm">${Q.t}d</span>`:''} <span class="badge">🔥 Streak ${Q.streak}x</span></h1><div class="card">${bar(Q.i,Q.items.length)}<div class="big">${esc(it.q)}</div><div class="opts">${JSON.parse(it.opsi?.[0]==='['?it.opsi:JSON.stringify(it.opsi)).map(o=>`<button class="opt" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div><p><button class="lite" id="hint">Lihat bantuan pola</button> <span id="h" class="mono"></span></p></div>`;
+  const m=/(\d+) × (\d+)/.exec(it.q);$('#hint').onclick=()=>{if(m)$('#h').textContent=Array.from({length:+m[2]},(_,i)=>+m[1]*(i+1)).join(', ')};
+  document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{Q.ans.push({id:it.id,v:b.dataset.v});Q.i++;if(Q.i>=Q.items.length)fin();else soal()});
+}
+async function fin(){clearInterval(timer);if(!Q||Q.done)return;Q.done=1;if(!Q.ans.length){Q=null;return V.kuis()}
+  const r=await api('kuis',{materi:Q.m,mode:Q.mode,jawaban:Q.ans});await refresh();
+  $('#v').innerHTML=`<h1>Hasil kuis</h1><div class="card"><div class="big">${r.skor}</div><p style="text-align:center">${r.benar} dari ${r.total} benar. ${r.skor>=80?'Hebat sekali!':'Ayo coba lagi, kamu pasti bisa!'}</p><p style="text-align:center"><button id="ag">Latihan lagi</button></p></div>`;$('#ag').onclick=()=>{Q=null;shell()}}
+function runGame(S){let i=0,life=3,pts=0,x=340,y=300,vy=0,keys={},end=false;const c=$('#c'),g=c.getContext('2d');
+  const mk=()=>{const s=S[i%S.length],o=(Array.isArray(s.opsi)?s.opsi:JSON.parse(s.opsi)).slice(0,3);const k=null;return{q:s.q,o,id:s.id}};let cur=mk();
+  const key=cur.q&&null;let cor=null;(async()=>{})();
+  const ans=()=>{const m=/(\d+) × (\d+)/.exec(cur.q);return String(m[1]*m[2])};
+  onkeydown=e=>{keys[e.key]=1;if(e.key===' ')e.preventDefault()};onkeyup=e=>keys[e.key]=0;
+  const loop=()=>{if(end)return;if(keys.ArrowLeft)x-=5;if(keys.ArrowRight)x+=5;x=Math.max(20,Math.min(700,x));
+    if(keys[' ']&&y>=300)vy=-13;vy+=.7;y=Math.min(300,y+vy);if(y>=300)vy=0;
+    g.clearRect(0,0,720,360);g.fillStyle='#05345C';g.font='700 28px Spline Sans Mono';g.fillText(cur.q,260,40);
+    cur.o.forEach((o,k)=>{const bx=90+k*210,by=130;g.fillStyle='#FFDCC3';g.fillRect(bx,by,100,60);g.fillStyle='#7E4200';g.fillText(o,bx+25,by+40);
+      if(y<=by+85&&y>=by+40&&vy<0&&x>bx-20&&x<bx+100){if(o===ans()){pts+=10;i++;}else life--;cur=mk();y=300;vy=0;if(life<=0||i>=S.length)finish()}});
+    g.fillStyle='#515D8C';g.fillRect(x,y,30,40);$('#hud').textContent=`❤ ${life}  Poin ${pts}`;gameRaf=requestAnimationFrame(loop)};
+  const finish=async()=>{end=true;onkeydown=onkeyup=null;await api('game',{poin:pts});await refresh();$('#v').innerHTML=`<h1>Game selesai</h1><div class="card"><div class="big">${pts} poin</div><button id="ag">Main lagi</button></div>`;$('#ag').onclick=()=>shell()};
+  loop();
+}
+// ---- guru ----
+const fm=(id,h)=>`<form id="${id}" class="card">${h}</form>`;
+V.rekap=async()=>{const r=await api('rekap');$('#v').innerHTML=`<h1>Beranda guru</h1><div class="grid"><div class="card">Total siswa<div class="big">${r.siswa}</div></div><div class="card">Rata-rata nilai<div class="big">${r.rata}</div></div><div class="card">Bank soal<div class="big">${r.bank.n}</div>${r.bank.a||0} aktif</div><div class="card">Bab materi<div class="big">${r.materi}</div></div></div>`};
+V.materi=async()=>{const ms=await api('materi');
+  $('#v').innerHTML=`<h1>Kelola materi</h1>${fm('f',`<input name="judul" placeholder="Judul bab" required><input name="ket" placeholder="Keterangan"><label><input type="checkbox" name="aktif" checked> Aktif</label> <button>Simpan materi</button> <span class="no" id="e"></span>`)}<div class="card"><table><tr><th>Judul</th><th>Keterangan</th><th>Status</th><th></th></tr>${ms.map(m=>`<tr><td>${esc(m.judul)}</td><td>${esc(m.ket)}</td><td><span class="badge ${m.aktif?'':'w'}">${m.aktif?'Aktif':'Draf'}</span></td><td><button class="lite" data-s="${m.id}" data-a="${m.aktif?0:1}">${m.aktif?'Jadikan draf':'Aktifkan'}</button> <button class="lite" data-e="${m.id}">Ubah</button> <button class="del" data-d="${m.id}">Hapus</button></td></tr>`).join('')}</table></div>`;
+  $('#f').onsubmit=async e=>{e.preventDefault();const f=e.target;try{await api('materi',{judul:f.judul.value,ket:f.ket.value,aktif:f.aktif.checked});V.materi()}catch(x){$('#e').textContent=x.message}};
+  document.querySelectorAll('[data-s]').forEach(b=>b.onclick=async()=>{const m=ms.find(x=>x.id==b.dataset.s);await api('materi',{...m,aktif:+b.dataset.a});V.materi()});
+  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{if(confirm('Hapus bab beserta semua soalnya?')){await api('materi/hapus',{id:b.dataset.d});V.materi()}})};
+V.soal=async()=>{const ms=await api('materi'),f0=window._fm||0,ss=await api('soal?materi='+f0);
+  $('#v').innerHTML=`<h1>Kelola soal</h1>${fm('f',`<select name="materi_id">${ms.map(m=>`<option value="${m.id}">${esc(m.judul)}</option>`).join('')}</select><input name="q" placeholder="Pertanyaan, mis. 4 × 6 = ?" required><input name="opsi" placeholder="Opsi dipisah koma: 20, 24, 28, 32" required><input name="kunci" placeholder="Jawaban benar" required size="10"><button>Simpan soal</button> <span class="no" id="e"></span>`)}
+  <p>Filter: <select id="fl"><option value="0">Semua bab</option>${ms.map(m=>`<option value="${m.id}" ${m.id==f0?'selected':''}>${esc(m.judul)}</option>`).join('')}</select></p><div class="card"><table>${ss.map(s=>`<tr><td>${esc(s.q)}</td><td class="mono">${esc(JSON.parse(s.opsi).join(', '))}</td><td class="ok mono">${esc(s.kunci)}</td><td><button class="lite" data-es="${s.id}">Ubah</button> <button class="del" data-d="${s.id}">Hapus</button></td></tr>`).join('')}</table></div>`;
+  $('#fl').onchange=e=>{window._fm=+e.target.value;V.soal()};
+  $('#f').onsubmit=async e=>{e.preventDefault();const f=e.target;try{await api('soal',{materi_id:f.materi_id.value,q:f.q.value,opsi:f.opsi.value,kunci:f.kunci.value,aktif:1});V.soal()}catch(x){$('#e').textContent=x.message}};
+  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{await api('soal/hapus',{id:b.dataset.d});V.soal()})};
+V.rekapn=async()=>{const ss=await api('siswa'),ks=[...new Set(ss.map(s=>s.kelas))];window._k=window._k||'';
+  const q=(window._q||'').toLowerCase(),list=ss.filter(s=>(!window._k||s.kelas===window._k)&&(s.nama+s.nisn).toLowerCase().includes(q));
+  $('#v').innerHTML=`<h1>Data siswa</h1>${fm('f',`<input name="nisn" placeholder="NISN" required><input name="nama" placeholder="Nama lengkap" required><input name="kelas" placeholder="Kelas (3A)" size="6" required><input name="pw" placeholder="Kata sandi awal (default NISN)"><button>Tambah siswa</button> <span class="no" id="e"></span>`)}
+  <p><a href="/api/rekap.csv"><button type="button" class="lite">Unduh rekap CSV</button></a></p><p><input id="q" placeholder="Cari NISN / nama" value="${esc(window._q||'')}"> <select id="k"><option value="">Semua kelas</option>${ks.map(k=>`<option ${k===window._k?'selected':''}>${esc(k)}</option>`).join('')}</select></p>
+  <div class="card"><table><tr><th>NISN</th><th>Nama</th><th>Kelas</th><th>Progres</th><th>Rata-rata</th><th>Status</th><th></th></tr>${list.map(s=>`<tr><td class="mono">${esc(s.nisn)}</td><td>${esc(s.nama)}</td><td>${esc(s.kelas)}</td><td class="mono">${s.dikuasai}/100</td><td class="mono">${s.rata}</td><td><span class="badge ${s.dikuasai>=100?'':'w'}">${s.dikuasai>=100?'Tuntas':'Belajar'}</span></td><td><button class="lite" data-rs="${s.id}">Reset sandi</button> <button class="del" data-d="${s.id}">Hapus</button></td></tr>`).join('')}</table></div>`;
+  $('#q').onchange=e=>{window._q=e.target.value;V.rekapn()};$('#k').onchange=e=>{window._k=e.target.value;V.rekapn()};
+  $('#f').onsubmit=async e=>{e.preventDefault();const f=e.target;try{await api('siswa',{nisn:f.nisn.value,nama:f.nama.value,kelas:f.kelas.value,pw:f.pw.value});V.rekapn()}catch(x){$('#e').textContent=x.message}};
+  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{if(confirm('Hapus siswa ini beserta nilainya?')){await api('siswa/hapus',{id:b.dataset.d});V.rekapn()}})};
+V.akun=async()=>{$('#v').innerHTML=`<h1>Akun</h1>${fm('f',`<h3>Ganti kata sandi</h3><input name="lama" type="password" placeholder="Sandi lama" required><input name="baru" type="password" placeholder="Sandi baru (min 6)" required><button>Simpan</button> <span id="e"></span>`)}`;
+  $('#f').onsubmit=async e=>{e.preventDefault();const f=e.target;try{await api('ganti-sandi',{lama:f.lama.value,baru:f.baru.value});$('#e').className='ok';$('#e').textContent='Sandi diubah';f.reset()}catch(x){$('#e').className='no';$('#e').textContent=x.message}}};
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-e],[data-es],[data-rs]');if(!b)return;try{
+ if(b.dataset.e){const m=(await api('materi')).find(x=>x.id==b.dataset.e),j=prompt('Judul bab',m.judul);if(j===null)return;const k=prompt('Keterangan',m.ket);if(k===null)return;await api('materi',{...m,judul:j,ket:k});V.materi()}
+ if(b.dataset.es){const s=(await api('soal?materi=0')).find(x=>x.id==b.dataset.es),q=prompt('Pertanyaan',s.q);if(q===null)return;const o=prompt('Opsi (pisah koma)',JSON.parse(s.opsi).join(', '));if(o===null)return;const k=prompt('Jawaban benar',s.kunci);if(k===null)return;await api('soal',{...s,q,opsi:o,kunci:k});V.soal()}
+ if(b.dataset.rs){const pw=prompt('Sandi baru (min 6 karakter)');if(pw){await api('siswa/reset',{id:b.dataset.rs,pw});alert('Sandi diubah')}}
+}catch(x){alert(x.message)}});
+boot();
+</script></body></html>
